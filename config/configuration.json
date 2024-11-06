@@ -1,0 +1,11 @@
+{
+	"OutputDirectory": "D:/Sixdigma",
+	"IP" : "192.168.0.100",
+	"Port": 24691,
+	"DeviceId": 0,
+	"Unit": "mm",
+	"Luminance": true,
+	"CaptureMode": "single",
+	"PeriodTime" : 5000,
+	"IntervalTime" : 1000
+}
