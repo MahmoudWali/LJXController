@@ -124,10 +124,13 @@ bool Controller::openEthernet()
 {
     LJX8IF_ETHERNET_CONFIG ethernetConfig;
     QStringList ipFields = configParams.ip.split(".");
-    ethernetConfig.abyIpAddress[0] = ipFields[0].toInt();
-    ethernetConfig.abyIpAddress[1] = ipFields[1].toInt();
-    ethernetConfig.abyIpAddress[2] = ipFields[2].toInt();
-    ethernetConfig.abyIpAddress[3] = ipFields[3].toInt();
+    ethernetConfig.abyIpAddress[0] = static_cast<quint8>(ipFields[0].toInt());
+    ethernetConfig.abyIpAddress[1] = static_cast<quint8>(ipFields[1].toInt());
+    ethernetConfig.abyIpAddress[2] = static_cast<quint8>(ipFields[2].toInt());
+    ethernetConfig.abyIpAddress[3] = static_cast<quint8>(ipFields[3].toInt());
+    ethernetConfig.wPortNo         = (WORD)configParams.port;
+    ethernetConfig.reserve[0]      = (BYTE)0;
+    ethernetConfig.reserve[1]      = (BYTE)0;
 
     LONG lRc = LJX8IF_EthernetOpen((LONG)configParams.deviceId, &ethernetConfig);
     bool connectionStatus = (lRc == LJX8IF_RC_OK) ? true : false;
