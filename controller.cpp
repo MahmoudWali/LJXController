@@ -279,7 +279,7 @@ void Controller::runProcessing()
     getVersion();
     bool connectionStatus = openEthernet();
 
-    connectionStatus = true;  // pass for debug only  --> remove
+    //connectionStatus = true;  // pass for debug only  --> remove
 
     if (connectionStatus)    //connectionStatus
     {
@@ -372,7 +372,7 @@ void Controller::onProcessingComplete()
                 std::vector<PROFILE_DATA> vecProfileDataResult = multiData[0];     // get profile to check for --> Luminance ON
                 if (vecProfileDataResult.size() > 0)
                 {
-                    if (vecProfileDataResult[0].m_profileInfo.byLuminanceOutput == 1)     // Luminance ON
+                    if (vecProfileDataResult[0].m_profileInfo.byLuminanceOutput == 1 && configParams.luminance)     // Luminance ON
                     {
                         QString fileNameLuminance = configParams.outputDirectory + "/Luminance.csv";
                         fileLuminance.setFileName(fileNameLuminance);
@@ -394,7 +394,7 @@ void Controller::onProcessingComplete()
                     {
                         isSaveHeightSuccess = exportMultiData(&(vecProfileDataResult.at(0)), outHeightStream, (int)vecProfileDataResult.size(), 0);
 
-                        if (vecProfileDataResult[0].m_profileInfo.byLuminanceOutput == 1)   // Luminance ON
+                        if (vecProfileDataResult[0].m_profileInfo.byLuminanceOutput == 1 && configParams.luminance)   // Luminance ON
                         {
                             isSaveLuminaceSuccess = exportMultiData(&(vecProfileDataResult.at(0)),
                                                                     outLuminanceStream,
@@ -481,7 +481,7 @@ bool Controller::exportData(const PROFILE_DATA *profileData, QString strFileName
 
             out << unitValue << "\t";  // Write data and a tab
         }
-        out << "\r\n";  // Add a new line (CRLF)
+        out << "\n";  // Add a new line (CRLF)
     }
 
     file.close();
@@ -503,7 +503,7 @@ bool Controller::exportMultiData(const PROFILE_DATA *profileData, QTextStream &o
             }
             out << unitValue << "\t";  // Write data and a tab
         }
-        out << "\r\n";  // Add a new line (CRLF)
+        out << "\n";  // Add a new line (CRLF)
     }
 
     return true;
