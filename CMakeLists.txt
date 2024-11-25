@@ -13,7 +13,6 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Gui)
 
 add_executable(LJXController
-  WIN32
   main.cpp
   resources.qrc
   controller.h controller.cpp

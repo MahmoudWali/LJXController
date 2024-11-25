@@ -4,6 +4,14 @@ Controller::Controller(QObject *parent)
     : QObject{parent}
 {
     QObject::connect(this, &Controller::processingCompleted, this, &Controller::onProcessingComplete);
+
+
+    periodTimer = new QTimer(this);
+    scanTimer = new QTimer(this);
+
+    periodTimer->setSingleShot(true);    // single shot timer to cover the requested speriod
+    connect(periodTimer, &QTimer::timeout, this, &Controller::onPeriodTime);
+    connect(scanTimer, &QTimer::timeout, this, &Controller::onScanTime);
 }
 
 bool Controller::readConfigFile()
@@ -249,19 +257,19 @@ void Controller::runProcessing()
                     multiData.clear();
 
                     // main period timer
-                    periodTimer.setSingleShot(true);    // single shot timer to cover the requested speriod
-                    periodTimer.setInterval(configParams.periodTime);
-                    connect(&periodTimer, &QTimer::timeout, this, &Controller::onPeriodTime);
-                    periodTimer.start();
+                    periodTimer->setInterval(configParams.periodTime);
+                    periodTimer->start();
 
-                    scanTimer.setInterval(configParams.intervalTime);
-                    connect(&scanTimer, &QTimer::timeout, this, &Controller::onScanTime);
-                    scanTimer.start();
+                    scanTimer->setInterval(configParams.intervalTime);
+                    scanTimer->start();
                 }
             }
             else
             {
+                multiData.clear();
+                closeEthernet();
                 finializeDLL();
+                emit closingApp();
             }
         }
     }
@@ -356,12 +364,18 @@ void Controller::onProcessingComplete()
         }
     }
 
+    Logger::getLogger()->info("Saving Profile data to csv is done");
+
     closeEthernet();
     finializeDLL();
-
     multiData.clear();
 
-    Logger::getLogger()->info("Saving Profile data to csv is done");
+    emit closingApp();
+}
+
+QString Controller::getCaptureMode() const
+{
+    return configParams.captureMode;
 }
 
 void Controller::scanProfile(std::vector<PROFILE_DATA> &vecProfileDataResult)
@@ -375,7 +389,8 @@ void Controller::scanProfile(std::vector<PROFILE_DATA> &vecProfileDataResult)
 
 void Controller::onPeriodTime()
 {
-    scanTimer.stop();
+    scanTimer->stop();
+    periodTimer->stop();
     emit processingCompleted();
 }
 

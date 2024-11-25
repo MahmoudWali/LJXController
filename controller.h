@@ -89,6 +89,8 @@ public:
         int intervalTime;
     };
 
+    QString getCaptureMode() const;
+
 private:
     bool readConfigFile();
     bool initializeDLL();
@@ -117,11 +119,11 @@ public slots:
 signals:
     void notification(const QString &msg);
     void processingCompleted();
-
+    void closingApp();
 private:
     configuration configParams;
-    QTimer periodTimer;
-    QTimer scanTimer;
+    QTimer *periodTimer;
+    QTimer *scanTimer;
 
     std::vector<std::vector<PROFILE_DATA>> multiData;
 };
