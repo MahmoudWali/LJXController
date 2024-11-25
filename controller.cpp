@@ -91,6 +91,8 @@ void Controller::getVersion()
 
 bool Controller::openEthernet()
 {
+    Logger::getLogger()->info("Openning Ethernet Communication...");
+
     LJX8IF_ETHERNET_CONFIG ethernetConfig;
     QStringList ipFields = configParams.ip.split(".");
     ethernetConfig.abyIpAddress[0] = static_cast<quint8>(ipFields[0].toInt());

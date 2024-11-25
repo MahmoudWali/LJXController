@@ -19,7 +19,7 @@ private:
 
     static std::shared_ptr<spdlog::logger> initializeLogger()
     {
-        auto logger = spdlog::daily_logger_mt("daily_logger", "LJX_Logger.txt", 0, 0);
+        auto logger = spdlog::daily_logger_mt("daily_logger", "./log/LJX_Logger.txt", 0, 0);
         spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%^%l%$] %v");
         logger->flush_on(spdlog::level::info);
         return logger;
