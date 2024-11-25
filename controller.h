@@ -90,17 +90,13 @@ public:
     };
 
 private:
-    // main processing functions
-    void readConfigFile();
-    void writeCSVFile(const std::vector<std::vector<double>> &multiData);
-    void initializeDLL();
-    void finializeDLL();
+    bool readConfigFile();
+    bool initializeDLL();
+    bool finializeDLL();
     void getVersion();
     bool openEthernet();
     bool closeEthernet();
     bool triggerMeasurement();
-    bool startMeasurement();
-    bool stopMeasurement();
     void getProfile(std::vector<PROFILE_DATA> &vecProfileDataResult);
 
     void scanProfile(std::vector<PROFILE_DATA> &vecProfileDataResult);

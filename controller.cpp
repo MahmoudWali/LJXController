@@ -6,7 +6,7 @@ Controller::Controller(QObject *parent)
     QObject::connect(this, &Controller::processingCompleted, this, &Controller::onProcessingComplete);
 }
 
-void Controller::readConfigFile()
+bool Controller::readConfigFile()
 {
     QString configFilePath = QApplication::applicationDirPath() + "/config/configuration.json";
 
@@ -15,7 +15,7 @@ void Controller::readConfigFile()
     QFile configFile(configFilePath);
     if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        return;
+        return false;
     }
 
     // read json file to Byte array
@@ -27,15 +27,13 @@ void Controller::readConfigFile()
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
     if (error.error != QJsonParseError::NoError)
     {
-        qDebug() << "Error parsing JSON: " << error.errorString();
-        return;
+        return false;
     }
 
     // check if json file contains only objects
     if (!jsonDoc.isObject())
     {
-        qDebug() << "Json file doesn't contain objects";
-        return;
+        return false;
     }
 
     QJsonObject rootObject = jsonDoc.object();
@@ -59,65 +57,36 @@ void Controller::readConfigFile()
                               configParams.captureMode.toStdString(),
                               configParams.periodTime,
                               configParams.intervalTime);
+
+    Logger::getLogger()->info("Read configuration file is done");
+
+    return true;
 }
 
-void Controller::writeCSVFile(const std::vector<std::vector<double>> &multiData)
-{
-    Logger::getLogger()->info("{} {}", "Write data to csv file:", configParams.outputDirectory.toStdString() + "/profile_height.csv");
-
-    QDir saveExportDir(configParams.outputDirectory);
-    if (!saveExportDir.exists())
-    {
-        if (!saveExportDir.mkpath(configParams.outputDirectory))
-        {
-            QMessageBox::warning(nullptr, "Error", "Faild to create directory.");
-        }
-    }
-
-
-    QString profileHeightFilePath = configParams.outputDirectory + "/profile_height.csv";
-    QFile fileProfileHeight(profileHeightFilePath);
-
-    if (!fileProfileHeight.open(QIODevice::Text | QIODevice::WriteOnly))
-    {
-        qDebug() << "Unable to open file" << profileHeightFilePath <<  "for writing";
-        return;
-    }
-
-    QTextStream stream(&fileProfileHeight);
-
-    // write measurement content
-    for (int n = 0; n < multiData.size(); n++)
-    {
-        auto data = multiData.at(n);
-        for (int i = 0; i < data.size(); i++)
-        {
-            stream << data[i] << ", ";
-        }
-
-        stream << "\n";
-    }
-
-    fileProfileHeight.close();
-}
-
-void Controller::initializeDLL()
+bool Controller::initializeDLL()
 {
     LONG lRc = LJX8IF_Initialize();    // 0-ok
-    Logger::getLogger()->info("LJX8IF_Initialize");
+
+    bool result = (lRc == LJX8IF_RC_OK) ? true : false;
+    Logger::getLogger()->info("{} : {}", "Initializing LJX DLL", result);
+
+    return result;
 }
 
-void Controller::finializeDLL()
+bool Controller::finializeDLL()
 {
     LONG lRc = LJX8IF_Finalize();   // 0-ok
-    Logger::getLogger()->info("LJX8IF_Finalize");
+
+    bool result = (lRc == LJX8IF_RC_OK) ? true : false;
+    Logger::getLogger()->info("{} : {}", "Finialize LJX DLL", result);
+
+    return result;
 }
 
 void Controller::getVersion()
 {
     LJX8IF_VERSION_INFO versionInfo = LJX8IF_GetVersion();
-    Logger::getLogger()->info("{}:{}.{}.{}.{}", "getVersion", versionInfo.nMajorNumber, versionInfo.nMinorNumber, versionInfo.nRevisionNumber, versionInfo.nBuildNumber);
-    qDebug() << "Version: " << versionInfo.nMajorNumber << "." << versionInfo.nMinorNumber << "." << versionInfo.nRevisionNumber << "." << versionInfo.nBuildNumber;
+    Logger::getLogger()->info("{}: {}.{}.{}.{}", "LJX DLL Version", versionInfo.nMajorNumber, versionInfo.nMinorNumber, versionInfo.nRevisionNumber, versionInfo.nBuildNumber);
 }
 
 bool Controller::openEthernet()
@@ -133,9 +102,9 @@ bool Controller::openEthernet()
     ethernetConfig.reserve[1]      = (BYTE)0;
 
     LONG lRc = LJX8IF_EthernetOpen((LONG)configParams.deviceId, &ethernetConfig);
-    bool connectionStatus = (lRc == LJX8IF_RC_OK) ? true : false;
 
-    Logger::getLogger()->info("LJX8IF_EthernetOpen: Open Ethernet Communication");
+    bool connectionStatus = (lRc == LJX8IF_RC_OK) ? true : false;
+    Logger::getLogger()->info("{} : {}", "Open Ethernet Communication", connectionStatus);
 
     return connectionStatus;
 }
@@ -145,7 +114,7 @@ bool Controller::closeEthernet()
     LONG lRc = LJX8IF_CommunicationClose((LONG)configParams.deviceId);
     bool connectionStatus = (lRc == LJX8IF_RC_OK) ? true : false;
 
-    Logger::getLogger()->info("LJX8IF_CommunicationClose: Close Ethernet Communication");
+    Logger::getLogger()->info("{} : {}", "Close Ethernet Communication", connectionStatus);
 
     return connectionStatus;
 }
@@ -153,31 +122,11 @@ bool Controller::closeEthernet()
 bool Controller::triggerMeasurement()
 {
     LONG lRc = LJX8IF_Trigger((LONG)configParams.deviceId);
-    Logger::getLogger()->info("LJX8IF_Trigger: Trigger Measurement is sent");
 
     bool triggerStatus = (lRc == LJX8IF_RC_OK) ? true : false;
+    Logger::getLogger()->info("{} : {}", "Trigger Measurement is sent", triggerStatus);
 
     return triggerStatus;
-}
-
-bool Controller::startMeasurement()
-{
-    LONG lRc = LJX8IF_StartMeasure((LONG)configParams.deviceId);
-    Logger::getLogger()->info("LJX8IF_StartMeasure: Start Measurement");
-
-    bool startStatus = (lRc == LJX8IF_RC_OK) ? true : false;
-
-    return startStatus;
-}
-
-bool Controller::stopMeasurement()
-{
-    LONG lRc = LJX8IF_StopMeasure((LONG)configParams.deviceId);
-    Logger::getLogger()->info("LJX8IF_StopMeasure: Stop Measurement");
-
-    bool stopStatus = (lRc == LJX8IF_RC_OK) ? true : false;
-
-    return stopStatus;
 }
 
 int Controller::getOneProfileDataSize()
@@ -240,7 +189,7 @@ std::vector<PROFILE_DATA> Controller::analyzeProfileData(BYTE byGetProfileCount,
 
 void Controller::getProfile(std::vector<PROFILE_DATA> &vecProfileDataResult)
 {
-    Logger::getLogger()->info("LJX8IF_GetProfile: Get Profile");
+    Logger::getLogger()->info("Start GetProfile data");
 
     // define and set the request for getting the profile data
     LJX8IF_GET_PROFILE_REQUEST request;
@@ -262,62 +211,57 @@ void Controller::getProfile(std::vector<PROFILE_DATA> &vecProfileDataResult)
     LJX8IF_PROFILE_INFO profileInfo;
     LONG lRc = LJX8IF_GetProfile((LONG)configParams.deviceId, &request, &response, &profileInfo, (DWORD*)&vecProfileData.at(0), dwDataSize);
 
-    if (lRc != LJX8IF_RC_OK)
-        return;
+    bool getProfileStatus = (lRc == LJX8IF_RC_OK) ? true : false;
+    Logger::getLogger()->info("{} : {}", "GetProfile status", getProfileStatus);
 
     // log response and profileInfo result
     logResponse(response);
     logProfileInfo(profileInfo);
 
-    vecProfileDataResult = analyzeProfileData(response.byGetProfileCount, profileInfo, vecProfileData);
+    if (getProfileStatus)
+    {
+        vecProfileDataResult = analyzeProfileData(response.byGetProfileCount, profileInfo, vecProfileData);
+    }
 }
 
 void Controller::runProcessing()
 {
-    readConfigFile();  // json
-    initializeDLL();   // LJX DLL
-    getVersion();
-    bool connectionStatus = openEthernet();
-
-    //connectionStatus = true;  // pass for debug only  --> remove
-
-    if (connectionStatus)    //connectionStatus
+    if (readConfigFile())           // read config
     {
-        Logger::getLogger()->info("Successful to open the device");
-        qDebug() << "Successful to open the device";
-
-        if (QString(configParams.captureMode).toLower() == "single")    // only get one profile
+        if (initializeDLL())        // initialize LJX dll
         {
-            qDebug() << "run processing single profile...";
+            getVersion();           // log version
+            if (openEthernet())     // open ethernet port
+            {
+                if (QString(configParams.captureMode).toLower() == "single")    // only get one profile
+                {
+                    multiData.clear();
+                    std::vector<PROFILE_DATA> vecProfileDataResult;
+                    scanProfile(vecProfileDataResult);                  // get profile
+                    multiData.push_back(vecProfileDataResult);
 
-            multiData.clear();
-            std::vector<PROFILE_DATA> vecProfileDataResult;
-            scanProfile(vecProfileDataResult);
-            multiData.push_back(vecProfileDataResult);
+                    emit processingCompleted();
+                }
+                else                                                        // multi profiles for x period at y intervals
+                {
+                    multiData.clear();
 
-            emit processingCompleted();
+                    // main period timer
+                    periodTimer.setSingleShot(true);    // single shot timer to cover the requested speriod
+                    periodTimer.setInterval(configParams.periodTime);
+                    connect(&periodTimer, &QTimer::timeout, this, &Controller::onPeriodTime);
+                    periodTimer.start();
+
+                    scanTimer.setInterval(configParams.intervalTime);
+                    connect(&scanTimer, &QTimer::timeout, this, &Controller::onScanTime);
+                    scanTimer.start();
+                }
+            }
+            else
+            {
+                finializeDLL();
+            }
         }
-        else                                                        // multi profiles for x period at y intervals
-        {
-            qDebug() << "run processing multi profile...";
-
-            multiData.clear();
-
-            // main period timer
-            periodTimer.setSingleShot(true);    // single shot timer to cover the requested speriod
-            periodTimer.setInterval(configParams.periodTime);
-            connect(&periodTimer, &QTimer::timeout, this, &Controller::onPeriodTime);
-            periodTimer.start();
-
-            scanTimer.setInterval(configParams.intervalTime);
-            connect(&scanTimer, &QTimer::timeout, this, &Controller::onScanTime);
-            scanTimer.start();
-        }
-    }
-    else
-    {
-        Logger::getLogger()->info("Failed to open the device");
-        qDebug() << "Failed to open the device";
     }
 }
 
@@ -340,16 +284,13 @@ void Controller::onProcessingComplete()
                                                  (int)vecProfileDataResult.size(),
                                                  0);
 
-
-                if (vecProfileDataResult[0].m_profileInfo.byLuminanceOutput == 1)   // Luminance ON
+                if (vecProfileDataResult[0].m_profileInfo.byLuminanceOutput == 1 && configParams.luminance)   // Luminance ON
                 {
                     QString fileNameLuminance = configParams.outputDirectory + "/Luminance.csv";
                     isSaveLuminaceSuccess = exportData(&(vecProfileDataResult.at(0)),
                                                        fileNameLuminance.toStdString().c_str(),
                                                        (int)vecProfileDataResult.size(),
                                                        vecProfileDataResult[0].m_profileInfo.wProfileDataCount);
-
-
                 }
             }
         }
@@ -413,34 +354,25 @@ void Controller::onProcessingComplete()
         }
     }
 
-    Logger::getLogger()->info("{} {}", "Save Profile Height to csv is done", isSaveHeightSuccess);
-    Logger::getLogger()->info("{} {}", "Save Lumiinance to csv is done", isSaveLuminaceSuccess);
-
     closeEthernet();
     finializeDLL();
 
     multiData.clear();
 
-    qDebug() << "Finish.";
+    Logger::getLogger()->info("Saving Profile data to csv is done");
 }
-
-
 
 void Controller::scanProfile(std::vector<PROFILE_DATA> &vecProfileDataResult)
 {
     bool triggerStatus = triggerMeasurement();
-    if (triggerStatus)   // get profile of height
+    if (triggerStatus)
     {
-
+        getProfile(vecProfileDataResult);  // get profile of height
     }
-
-    getProfile(vecProfileDataResult);
 }
 
 void Controller::onPeriodTime()
 {
-    qDebug() << "performMeasurements is finished";
-    // when finish stop the scan timer and emit signal to close the ethernet and finialize the DLL
     scanTimer.stop();
     emit processingCompleted();
 }
@@ -450,8 +382,6 @@ void Controller::onScanTime()
     std::vector<PROFILE_DATA> vecProfileDataResult;
     scanProfile(vecProfileDataResult);
     multiData.push_back(vecProfileDataResult);
-
-    qDebug() << "performMeasurements...";
 }
 
 bool Controller::exportData(const PROFILE_DATA *profileData, QString strFileName, int nProfileCount, int nDataStartIndex)
