@@ -293,7 +293,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Revert Configuration</string>
+         <string>Revert Changes</string>
         </property>
        </widget>
       </item>
