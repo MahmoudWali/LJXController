@@ -54,6 +54,9 @@ bool Controller::readConfigFile()
     configParams.captureMode = rootObject["CaptureMode"].toString();
     configParams.periodTime = rootObject["PeriodTime"].toInt();
     configParams.intervalTime = rootObject["IntervalTime"].toInt();
+    configParams.measurementRangeX = rootObject["MeasuringRangeX"].toString();
+    configParams.thinning = rootObject["Thinning"].toString();
+    configParams.samplingCycle = rootObject["SamplingCycle"].toInt();
 
     Logger::getLogger()->info("{} {}, {}, {}, {}, {}, {}, {}, {}, {}", "Configuration params: ",
                               configParams.outputDirectory.toStdString(),
@@ -64,7 +67,10 @@ bool Controller::readConfigFile()
                               configParams.luminance,
                               configParams.captureMode.toStdString(),
                               configParams.periodTime,
-                              configParams.intervalTime);
+                              configParams.intervalTime,
+                              configParams.measurementRangeX.toStdString(),
+                              configParams.thinning.toStdString(),
+                              configParams.samplingCycle);
 
     Logger::getLogger()->info("Read configuration file is done");
 
@@ -139,12 +145,89 @@ bool Controller::triggerMeasurement()
     return triggerStatus;
 }
 
+bool Controller::getIsXBinningOn()
+{
+    bool binning = false;
+
+    // Get luminance output
+    bool bIsLuminanceOutput = configParams.luminance ? true : false;
+
+    //Get sampling period
+    int samplingPeriod = configParams.samplingCycle;
+    if ((bIsLuminanceOutput) &&
+        ((samplingPeriod == 4500) ||
+         (samplingPeriod == 5000) ||
+         (samplingPeriod == 6000) ||
+         (samplingPeriod == 7000) ||
+         (samplingPeriod == 8000)))
+    {
+        binning = true;
+    }
+    else if ((!bIsLuminanceOutput) &&
+             ((samplingPeriod == 10000) ||
+              (samplingPeriod == 12000) ||
+              (samplingPeriod == 14000) ||
+              (samplingPeriod == 16000)))
+    {
+        binning = true;
+    }
+
+    return binning;
+}
+
+int Controller::getProfileCountByMeasureRange()
+{
+    if (configParams.measurementRangeX == "FULL")
+    {
+        return 3200;
+    }
+    else if (configParams.measurementRangeX == "3/4")
+    {
+        return 2400;
+    }
+    else if (configParams.measurementRangeX == "1/2")
+    {
+        return 1600;
+    }
+    else if (configParams.measurementRangeX == "1/4")
+    {
+        return 800;
+    }
+
+    return 0;
+}
+
+int Controller::getDivideValueByThinning()
+{
+    if (configParams.thinning == "OFF")
+    {
+        return 1;
+    }
+    else if (configParams.thinning == "1/2")
+    {
+        return 2;
+    }
+    else if (configParams.thinning == "1/4")
+    {
+        return 4;
+    }
+    return 0;
+}
+
+int Controller::getProfileCount()
+{
+    bool bIsXBinningOn = getIsXBinningOn();
+    int nDevidedValue = bIsXBinningOn ? 2 : 1;
+    int profileDataCount = getProfileCountByMeasureRange() / getDivideValueByThinning() / nDevidedValue;
+    return max(200, profileDataCount);
+}
+
 int Controller::getOneProfileDataSize()
 {
     int nMultipleValueForLuminanceOutput = configParams.luminance ? 2 : 1;
-    int GetXDirectionDataCount =  3200 * nMultipleValueForLuminanceOutput;
+    int getXDirectionDataCount =  getProfileCount() * nMultipleValueForLuminanceOutput;
 
-    int nProfileCount = GetXDirectionDataCount;
+    int nProfileCount = getXDirectionDataCount;
     // Buffer size (in units of bytes)
     UINT oneProfileBufferSize = 0;
 
@@ -288,7 +371,7 @@ void Controller::onProcessingComplete()
             std::vector<PROFILE_DATA> vecProfileDataResult = multiData[0];
             if (vecProfileDataResult.size() > 0)
             {
-                QString fileNameHeight = configParams.outputDirectory + "/Height.csv";
+                QString fileNameHeight = QDir(configParams.outputDirectory).filePath("Height.csv");
                 isSaveHeightSuccess = exportData(&(vecProfileDataResult.at(0)),
                                                  fileNameHeight.toStdString().c_str(),
                                                  (int)vecProfileDataResult.size(),
@@ -296,7 +379,7 @@ void Controller::onProcessingComplete()
 
                 if (vecProfileDataResult[0].m_profileInfo.byLuminanceOutput == 1 && configParams.luminance)   // Luminance ON
                 {
-                    QString fileNameLuminance = configParams.outputDirectory + "/Luminance.csv";
+                    QString fileNameLuminance = QDir(configParams.outputDirectory).filePath("Luminance.csv");
                     isSaveLuminaceSuccess = exportData(&(vecProfileDataResult.at(0)),
                                                        fileNameLuminance.toStdString().c_str(),
                                                        (int)vecProfileDataResult.size(),
@@ -309,7 +392,7 @@ void Controller::onProcessingComplete()
     {
         if (multiData.size() > 0)
         {
-            QString fileNameHeight = configParams.outputDirectory + "/Height.csv";
+            QString fileNameHeight = QDir(configParams.outputDirectory).filePath("Height.csv");
             QFile fileHeight(fileNameHeight);
             if (fileHeight.open(QIODevice::WriteOnly | QIODevice::Text))
             {
@@ -325,7 +408,7 @@ void Controller::onProcessingComplete()
                 {
                     if (vecProfileDataResult[0].m_profileInfo.byLuminanceOutput == 1 && configParams.luminance)     // Luminance ON
                     {
-                        QString fileNameLuminance = configParams.outputDirectory + "/Luminance.csv";
+                        QString fileNameLuminance = QDir(configParams.outputDirectory).filePath("Luminance.csv");
                         fileLuminance.setFileName(fileNameLuminance);
                         openLuminanceFile = fileLuminance.open(QIODevice::WriteOnly | QIODevice::Text);
                         if (openLuminanceFile)

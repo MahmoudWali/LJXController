@@ -22,7 +22,7 @@ target_link_libraries(LJXController Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_M
 
 # set icon for app exe
 if(WIN32)
-    target_sources(LJXController PRIVATE app_icon.rc)
+    target_sources(LJXController PRIVATE "${CMAKE_SOURCE_DIR}/app_icon.rc")
 endif()
 
 # add logging spdlog library
@@ -58,3 +58,4 @@ install(TARGETS LJXController
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+add_subdirectory(LJXConfiguration)

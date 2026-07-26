@@ -22,6 +22,8 @@ private:
         auto logger = spdlog::daily_logger_mt("daily_logger", "./log/LJX_Logger.txt", 0, 0);
         spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%^%l%$] %v");
         logger->flush_on(spdlog::level::info);
+
+        spdlog::set_default_logger(logger);
         return logger;
     }
 };

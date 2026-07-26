@@ -87,6 +87,9 @@ public:
         bool luminance;
         int periodTime;
         int intervalTime;
+        QString measurementRangeX;
+        QString thinning;
+        int samplingCycle;
     };
 
     QString getCaptureMode() const;
@@ -106,6 +109,10 @@ private:
     void onScanTime();
 
     // profile related processing
+    bool getIsXBinningOn();
+    int getProfileCountByMeasureRange();
+    int getDivideValueByThinning();
+    int getProfileCount();
     int getOneProfileDataSize();
     void logResponse(LJX8IF_GET_PROFILE_RESPONSE response);
     void logProfileInfo(LJX8IF_PROFILE_INFO profileInfo);
