@@ -150,7 +150,7 @@ bool Controller::getIsXBinningOn()
     bool binning = false;
 
     // Get luminance output
-    bool bIsLuminanceOutput = configParams.luminance ? true : false;
+    bool bIsLuminanceOutput = configParams.luminance;
 
     //Get sampling period
     int samplingPeriod = configParams.samplingCycle;
