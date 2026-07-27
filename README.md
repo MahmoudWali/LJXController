@@ -88,6 +88,19 @@ Example:
     "SamplingCycle": 1000
 }
 ```
+## Configuration Tool
+
+The configuration tool allows users to edit the acquisition settings and immediately calculate the expected number of points per profile.
+
+<p align="center">
+  <img src="docs/images/configuration-tool.png"
+       alt="LJ-X configuration tool"
+       width="48%">
+
+  <img src="docs/images/profile-points-calculation.png"
+       alt="Profile point calculation"
+       width="48%">
+</p>
 
 ### Configuration fields
 
