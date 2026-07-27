@@ -123,42 +123,9 @@ bool MainWindow::createDefaultConfigurationFile()
     const QJsonDocument jsonDocument(defaultObject);
     const QByteArray jsonData = jsonDocument.toJson(QJsonDocument::Indented);
 
-    QSaveFile configFile(configurationFilePath);
-    if (!configFile.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        QMessageBox::warning(
-            this,
-            "Configuration",
-            "Could not create the configuration file:\n" +
-                QDir::toNativeSeparators(configurationFilePath));
+    bool writeResult = writeConfigurationData(jsonData);
 
-        return false;
-    }
-
-    if (configFile.write(jsonData) != jsonData.size())
-    {
-        configFile.cancelWriting();
-
-        QMessageBox::warning(
-            this,
-            "Configuration",
-            "Could not write the default configuration.");
-
-        return false;
-    }
-
-    if (!configFile.commit())
-    {
-        QMessageBox::warning(
-            this,
-            "Configuration",
-            "Could not save the default configuration file:\n" +
-                QDir::toNativeSeparators(configurationFilePath));
-
-        return false;
-    }
-
-    return true;
+    return writeResult;
 }
 
 void MainWindow::readConfigurationFromJSON()
@@ -334,40 +301,8 @@ bool MainWindow::saveConfigurationToJSON()
     const QJsonDocument jsonDocument(updatedObject);
     const QByteArray jsonData = jsonDocument.toJson(QJsonDocument::Indented);
 
-    QSaveFile configFile(configurationFilePath);
-
-    if (!configFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    if (!writeConfigurationData(jsonData))
     {
-        QMessageBox::warning(
-            this,
-            "Configuration",
-            "Could not open configuration file for writing:\n" +
-                QDir::toNativeSeparators(
-                    configurationFilePath));
-
-        return false;
-    }
-
-    if (configFile.write(jsonData) != jsonData.size())
-    {
-        configFile.cancelWriting();
-
-        QMessageBox::warning(
-            this,
-            "Configuration",
-            "Could not write the configuration data.");
-
-        return false;
-    }
-
-    if (!configFile.commit())
-    {
-        QMessageBox::warning(
-            this,
-            "Configuration",
-            "Could not save configuration file:\n" +
-            QDir::toNativeSeparators(configurationFilePath));
-
         return false;
     }
 
@@ -523,4 +458,46 @@ void MainWindow::on_selectFolderBtn_clicked()
     }
 
     ui->outputDirectoryEdit->setText(QDir::toNativeSeparators(selectedDirectory));
+}
+
+bool MainWindow::writeConfigurationData(const QByteArray &jsonData)
+{
+    QSaveFile configFile(configurationFilePath);
+
+    if (!configFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QMessageBox::warning(
+            this,
+            "Configuration",
+            "Could not open configuration file for writing:\n" +
+                QDir::toNativeSeparators(
+                    configurationFilePath));
+
+        return false;
+    }
+
+    if (configFile.write(jsonData) != jsonData.size())
+    {
+        configFile.cancelWriting();
+
+        QMessageBox::warning(
+            this,
+            "Configuration",
+            "Could not write the configuration data.");
+
+        return false;
+    }
+
+    if (!configFile.commit())
+    {
+        QMessageBox::warning(
+            this,
+            "Configuration",
+            "Could not save configuration file:\n" +
+                QDir::toNativeSeparators(configurationFilePath));
+
+        return false;
+    }
+
+    return true;
 }

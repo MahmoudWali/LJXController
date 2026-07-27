@@ -73,5 +73,7 @@ private:
     QString measurementRangeX;
     QString thinning;
     int samplingCycle;
+
+    bool writeConfigurationData(const QByteArray &jsonData);
 };
 #endif // MAINWINDOW_H
