@@ -2,7 +2,6 @@
 *.exe
 *.log
 /build/
-*.dll
 *.pdb
 out/
 .vs/
